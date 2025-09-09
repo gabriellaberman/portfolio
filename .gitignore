@@ -50,3 +50,6 @@ rsconnect/
 
 # orignal downloads folder
 /original_downloads
+
+# processed data folder
+/processed_data
