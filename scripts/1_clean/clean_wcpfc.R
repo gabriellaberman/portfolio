@@ -1,4 +1,4 @@
-## clean wcpfc public domain bycatch data 
+## clean wcpfc public domain observer bycatch data 
 
 # load libraries
 library(here)
@@ -139,10 +139,6 @@ wcpfc <- t2 |>
          common_name,
          code,
          geom)
-
-# change capitalization
-
-# remove NAs
 
 # export to disk
 st_write(obj = wcpfc,
