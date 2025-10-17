@@ -97,15 +97,16 @@ ll_ps_species <- full_join(x = ll_ps,
 t1 <- ll_ps_species |>  
   pivot_longer(cols = c(common_name, species_or_group),
                names_to = NULL,
-               values_to = "species")
+               values_to = "common_name")
 
 t2 <- t1 |> 
   pivot_longer(cols = c(species_category, species_code),
                names_to = NULL,
                values_to = "code")
 
-# rename columns and reorder columns
+# rename columns, remove NAs, change capitalization in rows, and reorder columns
 wcpfc <- t2 |> 
+  replace_na() |> 
   rename(year = calendar_year,
          vessels = number_of_vessels_with_observer_data,
          captures = observed_captures_number,
@@ -120,6 +121,7 @@ wcpfc <- t2 |>
          mortalities_per_set = observed_mortality_rate_per_set,
          sci_name = scientific_name
          ) |> 
+  mutate(common_name = str_to_lower(common_name)) |> 
   select(year,
          fishery,
          vessels,
@@ -133,9 +135,13 @@ wcpfc <- t2 |>
          live_releases,
          mortalities,
          sci_name,
-         species,
+         common_name,
          code,
          geom)
+
+# change capitalization
+
+# remove NAs
 
 # export to disk
 st_write(obj = wcpfc,
