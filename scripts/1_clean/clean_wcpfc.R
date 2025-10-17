@@ -121,7 +121,8 @@ wcpfc <- t2 |>
          mortalities_per_set = observed_mortality_rate_per_set,
          sci_name = scientific_name
          ) |> 
-  mutate(common_name = str_to_lower(common_name)) |> 
+  mutate(common_name = str_to_lower(common_name),
+         sci_name = str_to_sentence(sci_name)) |> 
   select(year,
          fishery,
          vessels,
