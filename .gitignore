@@ -49,7 +49,10 @@ po/*~
 rsconnect/
 
 # orignal downloads folder
-/original_downloads
+#/original_downloads
+
+# PDF in original downloads folder
+Public domain Bycatch Data files _ WCPFC.pdf
 
 # processed data folder
 /processed_data
