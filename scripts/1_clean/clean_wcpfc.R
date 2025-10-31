@@ -7,138 +7,98 @@ library(readxl)
 library(janitor)
 library(sf)
 
-# load data & clean names
-sheet2 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx",
-                    sheet = 2,
-                    na = "na") |> 
-  clean_names()
+# load data, organize, & clean names
+sheet1 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # observer coverage (BDEP and full observer database)
+                    sheet = 1,
+                    na = "na",
+                    col_names = FALSE) |> 
+  slice(-14) |> # delet row 14 because its empty
+  slice(-1) |> # delete row 1
+  row_to_names(row_number = 1) |> # set row 1 as column names
+  clean_names() 
 
-sheet3 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx",
-                    sheet = 3,
-                    na = "na") |> 
-  clean_names()
+full_ll <- sheet1[, 8:12] |> # separate the full table from the bdep table
+  slice(1:11) |> # longline data from top half of sheet
+  mutate(calendar_year_2 = as.numeric(calendar_year_2)) # convert calendar_year_2 from char to num
+  
+full_ps <- sheet1[, 8:12] |> # separate the full table from the bdep table
+  slice(12:22) |> # purse seine data from bottom half of sheet
+  mutate(calendar_year_2 = as.numeric(calendar_year_2)) # convert calendar_year_2 from char to num
 
-sheet4 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx",
+sheet4 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # longline
                     sheet = 4,
                     na = "na") |> 
-  clean_names()
+  clean_names() 
 
-sheet5 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx",
+sheet5 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # purse seine
                     sheet = 5,
                     na = "na") |> 
-  clean_names()
+  clean_names() 
 
-sheet6 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx",
+sheet6 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # species
                     sheet = 6,
                     na = "na") |> 
-  clean_names()
-
-# convert lat lon to geom
-sheet4_geom <- st_as_sf(sheet4, coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326)
-sheet5_geom <- st_as_sf(sheet5, coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326)
-
-# show shared columns (to identify which columns to join)
-intersect(names(sheet2), names(sheet4_geom)) # sheet2 and sheet4_geom are longline
-intersect(names(sheet3), names(sheet5_geom)) # sheet3 and sheet5_geom are purse seine
-
-# join dataframes using full join and specifying column names
-longline <- full_join(x = sheet2,
-                      y = sheet4_geom,
-                      by = c("calendar_year",
-                             "fishery",
-                             "species_category",
-                             "species_or_group",
-                             "number_of_vessels_with_observer_data",
-                             "observed_captures_number",
-                             "observed_capture_rate_per_1000_hooks",
-                             "observed_mortalities_number",
-                             "observed_mortality_rate_per_1000_hooks",
-                             "observed_live_releases"))
-
-purse_seine <- full_join(x = sheet3,
-                         y = sheet5_geom,
-                         by = c("calendar_year",
-                                "fishery",
-                                "species_category",
-                                "species_or_group",
-                                "number_of_vessels_with_observer_data",
-                                "number_of_sets_observed",
-                                "observed_interactions_number",
-                                "observed_interaction_rate_per_set",
-                                "observed_mortalities_number",
-                                "observed_mortality_rate_per_set",
-                                "observed_live_releases"))
-
-# show shared column names
-intersect(names(longline), names(purse_seine))
-
-# join longline and purse seine dataframes using full join and specifying column names
-ll_ps <- full_join(x = longline,
-                   y = purse_seine,
-                   by = c("calendar_year",
-                         "fishery",
-                         "species_category",
-                         "species_or_group",
-                         "number_of_vessels_with_observer_data",
-                         "observed_mortalities_number",
-                         "observed_live_releases",
-                         "geometry"))
-
-# show shared column names
-intersect(names(ll_ps), names(sheet6))
-
-# join the combined longline and purse seine dataframes with sheet6
-ll_ps_species <- full_join(x = ll_ps, 
-                           y = sheet6,
-                           by = c("species_category",
-                                  "species_or_group" = "bdep_wcpfc_species_grouping"))
-
-# put data in tidy format using pivot_longer
-t1 <- ll_ps_species |>  
-  pivot_longer(cols = c(common_name, species_or_group),
+  clean_names() |> 
+  pivot_longer(cols = c(bdep_wcpfc_species_grouping, common_name),
                names_to = NULL,
-               values_to = "common_name")
+               values_to = "common_name") |> 
+  distinct() # only keep distinct rows
 
-t2 <- t1 |> 
-  pivot_longer(cols = c(species_category, species_code),
-               names_to = NULL,
-               values_to = "code")
-
-# rename columns, remove NAs, change capitalization in rows, and reorder columns
-wcpfc <- t2 |> 
-  replace_na() |> 
-  rename(year = calendar_year,
+# join longline (sheet4) and species sheets (sheet6), join observer coverage, convert lat lon to geom, rename columns
+longline <-
+  left_join(x = sheet4,
+            y = sheet6,
+            by = join_by(species_category == species_category,
+                         species_or_group == common_name)) |> 
+  left_join(y = full_ps,
+            by = join_by(calendar_year == calendar_year_2, 
+                         fishery == fishery_2)) |> 
+  st_as_sf(coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326) |> # convert lat lon to geom
+  mutate(species_or_group = str_to_lower(species_or_group),
+         scientific_name = str_to_sentence(scientific_name)) |> 
+  select(year = calendar_year,
+         species_code,
+         species_category,
+         sci_name = scientific_name,
+         common_name = species_or_group,
          vessels = number_of_vessels_with_observer_data,
          captures = observed_captures_number,
-         captures_per_1000_hooks = observed_capture_rate_per_1000_hooks,
+         capture_rate = observed_capture_rate_per_1000_hooks,
          mortalities = observed_mortalities_number,
-         mortalities_per_1000_hooks = observed_mortality_rate_per_1000_hooks,
+         mortality_rate = observed_mortality_rate_per_1000_hooks,
          live_releases = observed_live_releases,
-         geom = geometry,
+         total_effort = total_effort_longline_hooks_purse_seine_sets_2,
+         total_effort_observed = total_observed_effort_2,
+         observer_coverage = observer_coverage_2) 
+
+  
+# join longline (sheet5) and species sheets (sheet6), join observer coverage, convert lat lon to geom, rename columns
+purse_seine <- 
+  left_join(x = sheet5,
+            y = sheet6,
+            by = join_by(species_category == species_category, 
+                         species_or_group == common_name)) |> 
+  left_join(y = full_ll,
+            by = join_by(calendar_year == calendar_year_2, 
+                         fishery == fishery_2)) |> 
+  st_as_sf(coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326) |> # convert lat lon to geom
+    mutate(species_or_group = str_to_lower(species_or_group),
+         scientific_name = str_to_sentence(scientific_name)) |> 
+  select(year = calendar_year,
+         species_code,
+         species_category,
+         sci_name = scientific_name,
+         common_name = species_or_group,
+         vessels = number_of_vessels_with_observer_data,
          sets = number_of_sets_observed,
          interactions = observed_interactions_number,
-         interactions_per_set = observed_interaction_rate_per_set,
-         mortalities_per_set = observed_mortality_rate_per_set,
-         sci_name = scientific_name
-         ) |> 
-  mutate(common_name = str_to_lower(common_name),
-         sci_name = str_to_sentence(sci_name)) |> 
-  select(year,
-         fishery,
-         vessels,
-         captures,
-         captures_per_1000_hooks,
-         mortalities_per_1000_hooks,
-         sets,
-         interactions,
-         interactions_per_set,
-         mortalities_per_set,
-         live_releases,
-         mortalities,
-         sci_name,
-         common_name,
-         code,
-         geom)
+         interaction_rate = observed_interaction_rate_per_set,
+         mortalities = observed_mortalities_number,
+         mortality_rate = observed_mortality_rate_per_set,
+         live_releases = observed_live_releases,
+         total_effort = total_effort_longline_hooks_purse_seine_sets_2,
+         total_effort_observed = total_observed_effort_2,
+         observer_coverage = observer_coverage_2)
 
 # export to disk
 st_write(obj = wcpfc,
