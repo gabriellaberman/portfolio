@@ -28,12 +28,14 @@ full_ps <- sheet1[, 8:12] |> # separate the full table from the bdep table
 sheet4 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # longline
                     sheet = 4,
                     na = "na") |> 
-  clean_names() 
+  clean_names() |> 
+  mutate(calendar_year = as.numeric(calendar_year))
 
 sheet5 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # purse seine
                     sheet = 5,
                     na = "na") |> 
-  clean_names() 
+  clean_names() |> 
+  mutate(calendar_year = as.numeric(calendar_year))
 
 sheet6 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # species
                     sheet = 6,
@@ -44,15 +46,12 @@ sheet6 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # species
                values_to = "common_name") |> 
   distinct() # only keep distinct rows
 
-# join longline (sheet4) and species sheets (sheet6), join observer coverage, convert lat lon to geom, rename columns
+# join longline (sheet4) and species sheets (sheet6), convert lat lon to geom, rename columns
 longline <-
   left_join(x = sheet4,
             y = sheet6,
             by = join_by(species_category == species_category,
                          species_or_group == common_name)) |> 
-  left_join(y = full_ps,
-            by = join_by(calendar_year == calendar_year_2, 
-                         fishery == fishery_2)) |> 
   st_as_sf(coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326) |> # convert lat lon to geom
   mutate(species_or_group = str_to_lower(species_or_group),
          scientific_name = str_to_sentence(scientific_name)) |> 
@@ -66,21 +65,15 @@ longline <-
          capture_rate = observed_capture_rate_per_1000_hooks,
          mortalities = observed_mortalities_number,
          mortality_rate = observed_mortality_rate_per_1000_hooks,
-         live_releases = observed_live_releases,
-         total_effort = total_effort_longline_hooks_purse_seine_sets_2,
-         total_effort_observed = total_observed_effort_2,
-         observer_coverage = observer_coverage_2) 
+         live_releases = observed_live_releases) 
 
   
-# join longline (sheet5) and species sheets (sheet6), join observer coverage, convert lat lon to geom, rename columns
+# join longline (sheet5) and species sheets (sheet6), convert lat lon to geom, rename columns
 purse_seine <- 
   left_join(x = sheet5,
             y = sheet6,
             by = join_by(species_category == species_category, 
                          species_or_group == common_name)) |> 
-  left_join(y = full_ll,
-            by = join_by(calendar_year == calendar_year_2, 
-                         fishery == fishery_2)) |> 
   st_as_sf(coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326) |> # convert lat lon to geom
     mutate(species_or_group = str_to_lower(species_or_group),
          scientific_name = str_to_sentence(scientific_name)) |> 
@@ -95,13 +88,17 @@ purse_seine <-
          interaction_rate = observed_interaction_rate_per_set,
          mortalities = observed_mortalities_number,
          mortality_rate = observed_mortality_rate_per_set,
-         live_releases = observed_live_releases,
-         total_effort = total_effort_longline_hooks_purse_seine_sets_2,
-         total_effort_observed = total_observed_effort_2,
-         observer_coverage = observer_coverage_2)
+         live_releases = observed_live_releases)
 
 # export to disk
-st_write(obj = wcpfc,
-         dsn = here("processed_data/wcpfc.gpkg"),
+st_write(obj = longline,
+         dsn = here("processed_data/longline.gpkg"),
          delete_dsn = TRUE)
 
+st_write(obj = purse_seine,
+         dsn = here("processed_data/purse_seine.gpkg"),
+         delete_dsn = TRUE)
+
+write.csv(full_ll, "processed_data/full_ll.csv", row.names = FALSE)
+
+write.csv(full_ps, "processed_data/full_ps.csv", row.names = FALSE)
