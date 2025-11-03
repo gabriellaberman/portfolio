@@ -19,11 +19,21 @@ sheet1 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # observe
 
 full_ll <- sheet1[, 8:12] |> # separate the full table from the bdep table
   slice(1:11) |> # longline data from top half of sheet
-  mutate(calendar_year_2 = as.numeric(calendar_year_2)) # convert calendar_year_2 from char to num
+  mutate(calendar_year_2 = as.numeric(calendar_year_2)) |> # convert calendar_year_2 from char to num
+  select(year = calendar_year_2,
+         fishery = fishery_2,
+         total_effort = total_effort_longline_hooks_purse_seine_sets_2,
+         total_observed_effort = total_observed_effort_2,
+         observer_coverage = observer_coverage_2)
   
 full_ps <- sheet1[, 8:12] |> # separate the full table from the bdep table
   slice(12:22) |> # purse seine data from bottom half of sheet
-  mutate(calendar_year_2 = as.numeric(calendar_year_2)) # convert calendar_year_2 from char to num
+  mutate(calendar_year_2 = as.numeric(calendar_year_2)) |> # convert calendar_year_2 from char to num
+  select(year = calendar_year_2,
+         fishery = fishery_2,
+         total_effort = total_effort_longline_hooks_purse_seine_sets_2,
+         total_observed_effort = total_observed_effort_2,
+         observer_coverage = observer_coverage_2)
 
 sheet4 <- read_xlsx("original_downloads/BDEP Tables_11-2024 (1).xlsx", # longline
                     sheet = 4,
