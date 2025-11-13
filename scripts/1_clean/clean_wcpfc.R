@@ -62,7 +62,7 @@ longline <-
             y = sheet6,
             by = join_by(species_category == species_category,
                          species_or_group == common_name)) |> 
-  st_as_sf(coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326) |> # convert lat lon to geom
+  st_as_sf(coords = c("longitude_5_cell", "latitude_5_cell"), crs = 4326) |> # convert lat lon to geom
   mutate(species_or_group = str_to_lower(species_or_group),
          scientific_name = str_to_sentence(scientific_name)) |> 
   select(year = calendar_year,
@@ -84,7 +84,7 @@ purse_seine <-
             y = sheet6,
             by = join_by(species_category == species_category, 
                          species_or_group == common_name)) |> 
-  st_as_sf(coords = c("latitude_5_cell", "longitude_5_cell"), crs = 4326) |> # convert lat lon to geom
+  st_as_sf(coords = c("longitude_5_cell", "latitude_5_cell"), crs = 4326) |> # convert lat lon to geom
     mutate(species_or_group = str_to_lower(species_or_group),
          scientific_name = str_to_sentence(scientific_name)) |> 
   select(year = calendar_year,
