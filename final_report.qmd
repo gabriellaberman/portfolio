@@ -165,7 +165,7 @@ captures_rast <-
 ```
 ## 1. Longline bycatch mortalities
 
-Longline bycatch mortalities were greatest for sharks, followed by birds, turtles, and marine mammals/
+Longline bycatch mortalities were greatest for sharks, followed by birds, turtles, and marine mammals
 
 ```{r} 
 #| echo: false
