@@ -3,7 +3,9 @@ title: "Final report"
 subtitle: "An exploration of WCPFC bycatch data from 2013-2023"
 author: "Gabriella Berman"
 bibliography: references.bib
-format: html
+format: 
+  html:
+    output-file: index.html
 ---
 # Introduction 
 
