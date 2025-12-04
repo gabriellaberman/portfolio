@@ -20,10 +20,10 @@ Class portfolio for EVR 628, fall 2025.
   
   columns: longline.gpkg
     year: (num) year that the data was collected by the observers
-    species_code: (char) three letter code for the common name or group
-    species_category: (char) whether the animal is a shark, mammal, bird, or turtle
-    sci_name: (char) animal's scientific name (or genus when species was not possible to identify)
-    common_name: (char) animal's common name or group
+    species_code: (chr) three letter code for the common name or group
+    species_category: (chr) whether the animal is a shark, mammal, bird, or turtle
+    sci_name: (chr) animal's scientific name (or genus when species was not possible to identify)
+    common_name: (chr) animal's common name or group
     vessels: (num) number of vessels from which the observer data was collected
     captures: (num) number of animal captured in longline hooks
     capture_rate: (num) rate of captures per 1000 hooks
@@ -34,10 +34,10 @@ Class portfolio for EVR 628, fall 2025.
 
   columns: purse_seine.gpkg
     year: (num) year that the data was collected by the observers
-    species_code: (char) three letter code for the common name or group
-    species_category: (char) whether the animal is a shark, mammal, bird, or turtle
-    sci_name: (char) animal's scientific name (or genus when species was not possible to identify)
-    common_name: (char) animal's common name or group
+    species_code: (chr) three letter code for the common name or group
+    species_category: (chr) whether the animal is a shark, mammal, bird, or turtle
+    sci_name: (chr) animal's scientific name (or genus when species was not possible to identify)
+    common_name: (chr) animal's common name or group
     vessels: (num) number of vessels from which the observer data was collected
     sets: (num) number of purse seines set
     interactions: (num) number of interactions with purse seine sets
@@ -48,15 +48,15 @@ Class portfolio for EVR 628, fall 2025.
     geom: (sfc) lat/lon coordinates at 5x5 degree resolution
     
   columns: full_ll.csv
-    year: year the data was collected
-    fishery: in this case it is "L" for longline
-    total_effort: WCPFC metadata is not clear on what this column is measurin
-    total_observed_effort: WCPFC metadata is not clear on what this column is measurin
-    observer_coverage: percent of fleet with observers on board
+    year: (num) year the data was collected
+    fishery: (chr) in this case it is "L" for longline
+    total_effort: (num) WCPFC metadata is not clear on what this column is measurin
+    total_observed_effort: (num) WCPFC metadata is not clear on what this column is measurin
+    observer_coverage: (num) percent of fleet with observers on board
     
-  columns: full_ll.csv
-    year: year the data was collected
-    fishery: in this case it is "S" for purse seine
-    total_effort: WCPFC metadata is not clear on what this column is measuring
-    total_observed_effort: WCPFC metadata is not clear on what this column is measurin
-    observer_coverage: percent of fleet with observers on board
+  columns: full_ps.csv
+    year: (num) year the data was collected
+    fishery: (chr) in this case it is "S" for purse seine
+    total_effort: (num) WCPFC metadata is not clear on what this column is measuring
+    total_observed_effort: (num) WCPFC metadata is not clear on what this column is measurin
+    observer_coverage: (num) percent of fleet with observers on board
