@@ -60,3 +60,6 @@ Class portfolio for EVR 628, fall 2025.
     total_effort: (num) WCPFC metadata is not clear on what this column is measuring
     total_observed_effort: (num) WCPFC metadata is not clear on what this column is measurin
     observer_coverage: (num) percent of fleet with observers on board
+    
+  
+Link to final rendered document: https://gabriellaberman.github.io/portfolio/
