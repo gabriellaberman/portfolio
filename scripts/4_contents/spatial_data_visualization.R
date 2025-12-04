@@ -39,7 +39,7 @@ captures_rast <-
   annotation_north_arrow(location = "tr") +
   annotation_scale(location = "br") +
   labs(title = "Longline bycatch captures",
-       caption = "Longline bycatch captures for 2013-2024 from the WCPFC bycatch observer data, scale bar may be innacurate for some parts of the map due to mercator projection") +
+       caption = "Longline bycatch captures for 2013-2023 from the WCPFC bycatch observer data, scale bar may be innacurate for some parts of the map due to mercator projection") +
   coord_sf(crs = "+proj=merc +lon_0=150 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs +type=crs") + # mercator projection
   theme_classic()
   

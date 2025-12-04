@@ -4,9 +4,8 @@
 library(tidyverse)
 library(ggplot2)
 library(here)
-library(sf)
-library(ggridges)
 library(scales)
+library(sf)
 library(cowplot)
 
 # load data
@@ -50,7 +49,7 @@ p2 <- ggplot(data = purse_seine,
   theme(axis.title.y.left = element_blank(),
         legend.position = "none") +
   labs(x = "Number of mortalities",
-       caption = "Bycatch mortalities for 2013-2024 from WCPFC observer data, *note that there are no recorded bird mortalities in the purse seine data")
+       caption = "Bycatch mortalities for 2013-2023 from WCPFC observer data, *note that there are no recorded bird mortalities in the purse seine data")
 
   #combine the plots using cowplot
 animal_type_mortalities <- plot_grid(p1, p2, ncol = 1,
