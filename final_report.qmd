@@ -1,0 +1,225 @@
+---
+title: "Final report"
+subtitle: "An exploration of WCPFC bycatch data from 2013-2023"
+author: "Gabriella Berman"
+bibliography: references.bib
+format: html
+---
+# Introduction 
+
+- WCPFC (Western and Central Pacific Fisheries Commission) is the Regional Fisheries Management Organization (RFMO) for the western Pacific.
+
+- WCPFC collected and made available bycatch data collected by observers on longline and purse seine fishing vessels for the years 2013-2023.
+
+- This report contains a preliminary exploration of that data.
+
+
+# Objectives
+
+1. Clean the data.
+2. Visualize bycatch mortalities by animal type for the 10 year time period.
+3. Visualize observer coverage for the longline and purse seine fleets.
+4. Create a map of bycatch captures for the 10 year time period.
+
+# Data sources
+
+The data is from the WCPFC's [public domain bycatch observer data](https://www.wcpfc.int/sustainability/bycatch#:~:text=Bycatch%20data%20Excel%20file%20(BDEP)%20%2D%2011/2024) for longline and purse seine vessels within the WCPFC's jurisdiction and is in a single Excel spreadsheet with multiple tabs. Unfortunately WCPFC removed the link I originally used to download the data but I am citing to an Excel file that may contain the same dataset [@wcpfc2024bycatch].
+
+
+# Data processing
+## Cleaning the data
+- The Excel spreadsheet was imported into R using the readxl package [@readxlpkg] and cleaned using the dplyr package [@dplyrpkg] to reshape the data and the janitor package [@janitorpkg] to clean column names. 
+- Each tab in the Excel sheet had to be imported individually and then joined using a left join. Tabs related to longline were combined and tabs related to purse seine were combined. Longline and purse seine were also joined with a tab from the original Excel spreadsheet that contains information about the types of animals observed.
+- Latitude and longitude columns were converted to a single geometry column using the sf package [@sfbook; @sfarticle].
+
+## Visualizing the data
+- Bycatch captures by animal type were plotted with a violin plot using the ggplot2 package [@ggplot2pkg].
+
+- Observer coverage by year was plotted with a bar chart also using the ggplot2 package [@ggplot2pkg].
+
+- The map of longline bycatch captures over the 10 years of the dataset was created by rasterizing the longline data using the terra package [@terrapkg] and projecting it to center the Pacific, again using the  terra package [@terrapkg]. The rasterized longline data was projected over a map of the Earth (excluding Antarctica) from the rnaturalearth package [@natearth] which was also reprojected using the sf package [@sfbook; @sfarticle] to center the Pacific. The map was made using the ggspatial package [@ggspatialpkg] and tidyterra package [@R-tidyterra].
+
+
+# Main findings
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| code-fold: true
+# load libraries 
+library(tidyverse)
+library(ggplot2)
+library(here)
+library(scales)
+library(sf)
+library(cowplot)
+# load data
+longline <- st_read(dsn = here("processed_data/longline.gpkg"), quiet = TRUE)
+purse_seine <- st_read(dsn = here("processed_data/purse_seine.gpkg"), quiet = TRUE)
+full_ll <- read_csv("processed_data/full_ll.csv")
+full_ps <- read_csv("processed_data/full_ps.csv")
+# build figure 1: compare mortalities by species category turtle, shark, marine mammal, or bird for the longline and puirse seine vessels
+# build plot for the longline vessels
+p1 <- ggplot(data = longline,
+             mapping = aes(fill = species_category,
+                           x = mortalities,
+                           y = species_category)) +
+  geom_violin() + 
+  scale_x_log10() +
+  theme_classic(base_size = 12) +
+  scale_fill_manual(values = c("TTX" = "darkgreen", "SHK" = "lightblue", "MAM" = "purple", "BRD" = "orange")) +
+  scale_y_discrete(labels = c("TTX" = "Turtle", "SHK" = "Shark", "MAM" = "Mammal", "BRD" = "Bird")) +
+  theme(axis.title.y.left = element_blank(),
+        legend.position = "none") +
+  labs(x = "Number of mortalities",
+       title = "Longline: mortalities by animal type",
+       caption = "Longline bycatch mortalities for 2013-2023 from WCPFC observer data") 
+#build plot for the purse siene vessels
+p2 <- ggplot(data = purse_seine,
+             mapping = aes(fill = species_category,
+                           x = mortalities,
+                           y = species_category)) +
+  geom_violin() + 
+  scale_x_log10() +
+  theme_classic(base_size = 12) +
+  scale_fill_manual(values = c("TTX" = "darkgreen", "SHK" = "lightblue", "MAM" = "purple", "BRD" = "orange")) +
+  scale_y_discrete(labels = c("TTX" = "Turtle", "SHK" = "Shark", "MAM" = "Mammal", "BRD" = "Bird")) +
+  theme(axis.title.y.left = element_blank(),
+        legend.position = "none") +
+  labs(x = "Number of mortalities",
+       title = "Purse seine: mortalities by animal type",
+       caption = "Purse seine bycatch mortalities for 2013-2023 from WCPFC observer data")
+#combine the plots using cowplot
+animal_type_mortalities <- plot_grid(p1, p2, ncol = 1,
+                                     labels = c("Longline", "Purse Seine"),
+                                     label_size = 8, 
+                                     label_x = 0.95,
+                                     label_y = 0.95,
+                                     hjust = 1)
+# build figure 2: observer coverage by year for purse seine and longline fisheries
+observer <- bind_rows(full_ll, full_ps) 
+# build the plots
+observer_coverage_by_year <- ggplot (data = observer,
+                                     mapping = aes(x = year,
+                                                   y = observer_coverage)) +
+  geom_bar(stat = "identity",
+           fill = "darkblue") +
+  geom_text(aes(label = percent(observer_coverage)),
+            vjust = -0.5,
+            size = 3) +
+  facet_wrap(~fishery, ncol = 1, 
+             scales = "fixed",
+             labeller = labeller(fishery = c("L" = "Longline", "S" = "Purse seine"))) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(x = "Year",
+       y = "Observer coverage",
+       title = "Observer coverage by year",
+       caption = "WCPFC's observer coverage by year for longline and purse seine fisheries") +
+  theme_classic()
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| code-fold: true
+# load libraries
+library(ggspatial)
+library(rnaturalearth)
+library(tidyverse)
+library(sf)
+library(terra)
+library(tidyterra)
+library(mapview)
+# load data
+longline_vect <- vect("processed_data/longline.gpkg")
+coast <- ne_countries() |> 
+  st_break_antimeridian(lon_0 = 150) |> 
+  filter(!name == "Antarctica")
+# rasterize data (convert from spatvector to spatraster and from sf to spatraster)
+# template raster for more control over specifications
+template <- rast(ext(longline_vect), resolution = 5, crs = crs(longline_vect))
+# convert to raster and reproject to center the Pacific
+longline_raster <- rasterize(longline_vect, template, field = "captures", fun = sum) |> 
+  project("EPSG:8859")
+#reproject coast 
+coast_reproject <- st_transform(coast, crs = "EPSG:8859") 
+# visualize data
+captures_rast <- 
+  ggplot() +
+  geom_spatraster(data = longline_raster) +
+  scale_fill_viridis_c(name = "Captures", 
+                       na.value = "transparent",
+                       option = "plasma") +
+  geom_sf(data = coast_reproject, 
+          fill = NA, 
+          color = "black", 
+          linewidth = 0.5) +
+  annotation_north_arrow(location = "tr") +
+  annotation_scale(location = "br") +
+  labs(title = "Longline bycatch captures",
+       caption = "Longline bycatch captures for 2013-2023 from the WCPFC bycatch observer data") +
+  coord_sf(crs = "+proj=merc +lon_0=150 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs +type=crs") + 
+  theme_classic()
+```
+## 1. Longline bycatch mortalities
+
+Longline bycatch mortalities were greatest for sharks, followed by birds, turtles, and marine mammals/
+
+```{r} 
+#| echo: false
+#| fig-width: 6
+#| fig-height: 4
+#| warning: false
+p1
+```
+
+## 2. Purse seine bycatch mortalities
+
+Purse seine bycatch mortalities were greatest for sharks, followed by marine mammmals, and turtles. No bycatch mortalities were reported for birds.
+
+```{r} 
+#| echo: false
+#| fig-width: 6
+#| fig-height: 4
+#| warning: false
+p2
+```
+In the purse seine fishery the greatest bycatch mortalities were of sharks followed by marine mammals and then turtles. No bird mortalities were reported. 
+
+## 3. Observer coverage by year
+### Longline
+Observer coverage for the longline fleet has increased from its lowest value over the 10 year dataset of **`r paste0(round(min(observer$observer_coverage[observer$fishery == "L"]) * 100, 2), "%")`** in **`r observer$year[which(observer$observer_coverage == min(observer$observer_coverage))] `** to its highest value of **`r paste0(round(max(observer$observer_coverage[observer$fishery == "L"]) * 100, 2), "%")`** in **`r observer$year[which(observer$observer_coverage == max(observer$observer_coverage))] `**. 
+
+### Purse seine
+Observer coverage for the purse seine fleet is much higher than for the longline fleet, the highest percent coverage was **`r paste0(round(max(observer$observer_coverage[observer$fishery == "S"]) * 100, 2), "%")`** in **`r observer$year[which(observer$observer_coverage == max(observer$observer_coverage))] `**. Coverage dropped to **`r paste0(round(observer$observer_coverage[which(observer$fishery == "S" & observer$year == "2021")] * 100, 2), "%")`** in **`r observer$year[which(observer$fishery == "S" & observer$year == "2021")]`**
+ and **`r paste0(round(observer$observer_coverage[which(observer$fishery == "S" & observer$year == "2022")] * 100, 2), "%")`** in **`r observer$year[which(observer$fishery == "S" & observer$year == "2022")]`**, likely due to the global pandemic, but increased to **`r paste0(round(observer$observer_coverage[which(observer$fishery == "S" & observer$year == "2023")] * 100, 2), "%")`** in **`r observer$year[which(observer$fishery == "S" & observer$year == "2023")]`**.
+
+```{r} 
+#| echo: false
+#| fig-width: 6
+#| fig-height: 4
+#| warning: false
+observer_coverage_by_year
+```
+
+## 4. Map of bycatch captures
+
+```{r} 
+#| echo: false
+#| fig-width: 6
+#| fig-height: 4
+#| warning: false
+captures_rast
+```
+
+Bycatch captures were more concentrated in the north and eastern parts of the spatial area.
+
+
+# References
+::: {#refs}
+:::
+
+
+
